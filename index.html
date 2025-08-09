@@ -185,16 +185,16 @@
 (() => {
   // --- Данные ---
   const productsData = [
-    {id: 'apple', name: 'Яблоко', price: 50, emoji: '🍎'},
-    {id: 'orange', name: 'Апельсин', price: 50, emoji: '🍊'},
-    {id: 'coconut', name: 'Кокос', price: 50, emoji: '🥥'},
-    {id: 'ramen', name: 'Рамен', price: 50, emoji: '🍜'},
-    {id: 'banana', name: 'Банан', price: 50, emoji: '🍌'},
-    {id: 'bread', name: 'Хлеб', price: 50, emoji: '🍞'},
-    {id: 'milk', name: 'Молоко', price: 50, emoji: '🥛'},
-    {id: 'cheese', name: 'Сыр', price: 50, emoji: '🧀'},
+    {id: 'egg', name: 'Яйцо', price: 10, emoji: '🥚'},
+    {id: 'banana', name: 'Банан', price: 15, emoji: '🍌'},
+    {id: 'bread', name: 'Хлеб', price: 20, emoji: '🍞'},
+    {id: 'milk', name: 'Молоко', price: 25, emoji: '🥛'},
+    {id: 'cheese', name: 'Сыр', price: 30, emoji: '🧀'},
+    {id: 'apple', name: 'Яблоко', price: 35, emoji: '🍎'},
+    {id: 'orange', name: 'Апельсин', price: 37, emoji: '🍊'},
+    {id: 'ramen', name: 'Рамен', price: 40, emoji: '🍜'},
+    {id: 'coconut', name: 'Кокос', price: 45, emoji: '🥥'},
     {id: 'fish', name: 'Рыба', price: 50, emoji: '🐟'},
-    {id: 'egg', name: 'Яйцо', price: 50, emoji: '🥚'},
   ];
 
   let balance = 50;
@@ -224,12 +224,13 @@
   function renderProducts() {
     productsElem.innerHTML = '';
     productsData.forEach(p => {
+      const priceOnStorage = storage[p.id]?.price ?? p.price;
       const div = document.createElement('div');
       div.className = 'product';
       div.innerHTML = `
         <span class="emoji">${p.emoji}</span><strong>${p.name}</strong><br/>
         Цена покупки: <strong>5</strong> монет<br/>
-        Цена продажи (установленная): <input type="number" min="10" max="50" value="${storage[p.id]?.price ?? 50}" data-id="${p.id}" style="width: 60px;" /> <br/>
+        Цена продажи (установленная): <input type="number" min="10" max="50" value="${priceOnStorage}" data-id="${p.id}" style="width: 60px;" /> <br/>
         <button data-id="${p.id}">Купить</button>
       `;
       productsElem.appendChild(div);
@@ -266,217 +267,4 @@
     storageCapacityElem.textContent = storageCapacity;
   }
 
-  function renderUpgradePrice() {
-    upgradePriceElem.textContent = upgradePrice;
-  }
-
-  function renderReviews() {
-    reviewsElem.innerHTML = '';
-    if(reviews.length === 0) {
-      reviewsElem.innerHTML = '<i>Отзывов пока нет</i>';
-      return;
-    }
-    reviews.forEach(r => {
-      const div = document.createElement('div');
-      div.className = 'review';
-      div.innerHTML = `<span class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span> — ${r.text}`;
-      reviewsElem.appendChild(div);
-    });
-  }
-
-  // Подсчет рейтинга (среднее по последним 10 отзывам)
-  function calculateRating() {
-    if(reviews.length === 0) return '—';
-    const sum = reviews.reduce((a,b) => a + b.stars, 0);
-    return (sum / reviews.length).toFixed(1);
-  }
-
-  // Добавить отзыв, с ограничением до 10 последних
-  function addReview(stars, text) {
-    reviews.push({stars, text});
-    if(reviews.length > 10) reviews.shift();
-    renderReviews();
-    ratingValueElem.textContent = calculateRating();
-  }
-
-  // Подсчитать общий занятый склад
-  function storageCount() {
-    return Object.values(storage).reduce((a,b) => a + b.count, 0);
-  }
-
-  // Проверка проигрыша: если монет 0 и склад пуст
-  function checkLose() {
-    if(balance <= 0 && storageCount() === 0) {
-      alert('Вы проиграли! Игра будет перезапущена.');
-      location.reload();
-    }
-  }
-
-  // Обработка покупки товара (фиксировано 5 монет за покупку)
-  function buyProduct(id) {
-    if(balance < 5) {
-      alert('Недостаточно монет для покупки (нужно 5).');
-      return;
-    }
-    if(storageCount() >= storageCapacity) {
-      alert('Склад переполнен, сделайте апгрейд или продайте товары.');
-      return;
-    }
-    balance -= 5;
-    if(storage[id]) {
-      storage[id].count++;
-    } else {
-      storage[id] = {count:1, price: 50};
-    }
-    renderBalance();
-    renderStorage();
-    renderProducts(); // Чтобы синхронизировать цену в магазине и складе
-  }
-
-  // Продажа товара:  
-  // Цена продажи зависит от установленной цены на товар в складе  
-  // Чем ближе цена к 10, тем лучше отзыв и выше шанс продажи  
-  function sellProduct(id) {
-    if(!storage[id] || storage[id].count === 0) {
-      alert('Товар отсутствует на складе.');
-      return;
-    }
-
-    const price = storage[id].price;
-    if(price < 10) storage[id].price = 10;
-    if(price > 50) storage[id].price = 50;
-
-    // Спрос зависит от цены:  
-    // вероятность продажи = 1 - (цена-10)/40 (от 1 при цене 10 до 0 при цене 50)  
-    const saleChance = 1 - (price - 10) / 40;
-    if(Math.random() > saleChance) {
-      // покупатель не купил — плохой отзыв  
-      addReview(1, `Слишком дорогой ${productsData.find(p => p.id === id).name}.`);
-      alert('Покупатель посчитал цену слишком высокой и не купил товар.');
-      return;
-    }
-
-    // Успешная продажа
-    storage[id].count--;
-    balance += price;
-
-    // Отзыв в зависимости от цены:  
-    // цена ближе к 10 — 5 звёзд, ближе к 50 — 1 звезда (линейно)  
-    const stars = Math.round(5 - ((price - 10) / 40) * 4);
-    const positiveComments = [
-      'Отличный товар!',
-      'Очень доволен покупкой!',
-      'Хорошее качество.',
-      'Цена адекватная, покупаю ещё.',
-      'Буду рекомендовать друзьям.'
-    ];
-    const negativeComments = [
-      'Слишком дорого.',
-      'Не стоит своих денег.',
-      'Покупать не рекомендую.',
-      'Цена завышена.',
-      'Ждал скидок, но нет.'
-    ];
-
-    const text = stars >= 4 ? positiveComments[Math.floor(Math.random()*positiveComments.length)] : negativeComments[Math.floor(Math.random()*negativeComments.length)];
-    addReview(stars, text);
-
-    if(storage[id].count === 0) {
-      delete storage[id];
-    }
-    renderBalance();
-    renderStorage();
-    renderProducts(); // чтобы синхронизировать цены
-    checkLose();
-  }
-
-  // Обновление цены товара (через input в магазине и складе)
-  function updatePrice(id, newPrice) {
-    if(!storage[id]) {
-      storage[id] = {count:0, price: newPrice};
-    } else {
-      storage[id].price = newPrice;
-    }
-    renderStorage();
-    renderProducts();
-  }
-
-  // Улучшение склада
-  function upgradeStorage() {
-    if(balance < upgradePrice) {
-      alert(`Недостаточно монет. Нужно ${upgradePrice}.`);
-      return;
-    }
-    balance -= upgradePrice;
-    storageCapacity += 10;
-    upgradePrice += 100;
-
-    renderBalance();
-    renderStorageCapacity();
-    renderUpgradePrice();
-  }
-
-  // --- Обработчики ---
-  startBtn.onclick = () => {
-    const name = shopNameInput.value.trim();
-    if(name.length === 0) {
-      alert('Введите название магазина');
-      return;
-    }
-    shopName = name;
-    shopNameElem.textContent = shopName;
-    startScreen.style.display = 'none';
-    gameScreen.style.display = 'block';
-    renderProducts();
-    renderStorage();
-    renderBalance();
-    renderStorageCapacity();
-    renderUpgradePrice();
-    renderReviews();
-    ratingValueElem.textContent = '—';
-  };
-
-  upgradeStorageBtn.onclick = upgradeStorage;
-
-  productsElem.addEventListener('click', e => {
-    if(e.target.tagName === 'BUTTON') {
-      const id = e.target.getAttribute('data-id');
-      buyProduct(id);
-    }
-  });
-
-  storageElem.addEventListener('click', e => {
-    if(e.target.tagName === 'BUTTON') {
-      const id = e.target.getAttribute('data-id');
-      sellProduct(id);
-    }
-  });
-
-  productsElem.addEventListener('change', e => {
-    if(e.target.tagName === 'INPUT' && e.target.hasAttribute('data-id')) {
-      const id = e.target.getAttribute('data-id');
-      let val = parseInt(e.target.value);
-      if(isNaN(val)) val = 50;
-      if(val < 10) val = 10;
-      if(val > 50) val = 50;
-      e.target.value = val;
-      updatePrice(id, val);
-    }
-  });
-
-  storageElem.addEventListener('change', e => {
-    if(e.target.tagName === 'INPUT' && e.target.classList.contains('storage-price-input')) {
-      const id = e.target.getAttribute('data-id');
-      let val = parseInt(e.target.value);
-      if(isNaN(val)) val = 50;
-      if(val < 10) val = 10;
-      if(val > 50) val = 50;
-      e.target.value = val;
-      updatePrice(id, val);
-    }
-  });
-})();
-</script>
-
-</body>
-</html>
+  function renderUpgrade
