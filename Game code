@@ -1,0 +1,202 @@
+<!doctype html>
+
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Market Simulator — Покупай и Продавай</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#10b981;--muted:#94a3b8;--glass: rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter, system-ui, Arial}
+    body{margin:0;background:linear-gradient(180deg,#071126 0%,#071122 60%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .app{width:100%;max-width:980px}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    .coins{background:var(--card);padding:10px 14px;border-radius:12px;display:flex;gap:10px;align-items:center}
+    .coins b{font-size:18px;color:var(--accent)}.layout{display:grid;grid-template-columns:1fr 320px;gap:18px}
+.card{background:var(--card);border-radius:12px;padding:14px}
+.shop-grid{display:flex;gap:12px;flex-wrap:wrap}
+.item{width:calc(50% - 6px);background:var(--glass);padding:12px;border-radius:10px;display:flex;flex-direction:column;gap:8px}
+.item .row{display:flex;justify-content:space-between;align-items:center}
+.btn{background:linear-gradient(90deg,#0ea5a0,#06b6d4);border:none;padding:8px 10px;border-radius:8px;color:#022;cursor:pointer}
+.btn:active{transform:translateY(1px)}
+.small{font-size:13px;color:var(--muted)}
+.backpack-list{display:flex;flex-direction:column;gap:8px}
+.bp-item{background:var(--glass);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.controls{display:flex;gap:8px;align-items:center}
+.icon{font-size:20px}
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.6);}
+.panel{background:var(--card);padding:18px;border-radius:12px;width:320px}
+.qty-controls{display:flex;justify-content:space-between;align-items:center;margin:12px 0}
+.qty-controls button{width:48px;height:48px;border-radius:10px;border:none;font-size:22px;background:var(--glass);color:inherit}
+.sell-btn{background:#ef4444;color:white;padding:10px;border-radius:10px;border:none;width:100%;cursor:pointer}
+footer{margin-top:12px;color:var(--muted);font-size:13px}
+@media(max-width:840px){.layout{grid-template-columns:1fr}.item{width:100%}}
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Market Simulator</h1>
+      <div class="coins card">Монеты: <b id="coins">0</b></div>
+    </header><div class="layout">
+  <section class="card">
+    <h3>Магазин</h3>
+    <div class="shop-grid" id="shop"></div>
+    <footer>Кликни «Купить», чтобы положить предмет в рюкзак. Цена — указана в монетах.</footer>
+  </section>
+
+  <aside class="card">
+    <h3>Рюкзак</h3>
+    <div class="backpack-list" id="backpack"></div>
+    <div style="height:12px"></div>
+    <div class="small">Нажми на предмет в рюкзаке — появятся кнопки: слева «-», справа «+», посередине будет количество. Затем жми «Продать».</div>
+  </aside>
+</div>
+
+  </div>  <!-- Модал продажи -->  <div id="modal" style="display:none" class="modal" role="dialog">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div id="modal-name" style="font-weight:700;font-size:16px">Предмет</div>
+          <div class="small">Цена: <span id="modal-price">0</span> монет</div>
+        </div>
+        <div id="modal-icon" style="font-size:28px">🍎</div>
+      </div><div class="qty-controls">
+    <button id="dec">-</button>
+    <div style="text-align:center;flex:1"><div class="small">Выбрано</div><div id="qty" style="font-size:22px">1</div></div>
+    <button id="inc">+</button>
+  </div>
+  <button class="sell-btn" id="sell">Продать выбранное</button>
+</div>
+
+  </div>  <script>
+    // Простая имитация данных
+    const ITEMS = [
+      {id:'apple',name:'Яблоко',icon:'🍎',price:5},
+      {id:'smile',name:'Смайлик',icon:'😊',price:12},
+      {id:'banana',name:'Банан',icon:'🍌',price:8},
+      {id:'star',name:'Звёздочка',icon:'⭐',price:20}
+    ]
+
+    // Хранилище: монеты и рюкзак
+    const state = {
+      coins: Number(localStorage.getItem('coins')||50), // стартовые монеты
+      backpack: JSON.parse(localStorage.getItem('backpack')||'{}')
+    }
+
+    const shopEl = document.getElementById('shop')
+    const backpackEl = document.getElementById('backpack')
+    const coinsEl = document.getElementById('coins')
+
+    function save(){
+      localStorage.setItem('coins', state.coins)
+      localStorage.setItem('backpack', JSON.stringify(state.backpack))
+    }
+
+    function renderShop(){
+      shopEl.innerHTML = ''
+      ITEMS.forEach(it=>{
+        const div = document.createElement('div')
+        div.className='item'
+        div.innerHTML = `
+          <div class="row"><div><div style="font-size:22px">${it.icon} ${it.name}</div><div class="small">Цена: ${it.price}</div></div><div><button class="btn" data-id="${it.id}">Купить</button></div></div>
+        `
+        shopEl.appendChild(div)
+      })
+
+      // buy handlers
+      shopEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',e=>{
+        const id = e.currentTarget.dataset.id
+        buyItem(id)
+      }))
+    }
+
+    function renderBackpack(){
+      backpackEl.innerHTML = ''
+      const keys = Object.keys(state.backpack)
+      if(keys.length===0){
+        backpackEl.innerHTML='<div class="small">Рюкзак пуст</div>'
+        return
+      }
+      keys.forEach(id=>{
+        const qty = state.backpack[id]
+        const it = ITEMS.find(x=>x.id===id)
+        const el = document.createElement('div')
+        el.className='bp-item'
+        el.innerHTML = `<div style="display:flex;gap:10px;align-items:center"><div class="icon">${it.icon}</div><div><div style="font-weight:600">${it.name}</div><div class="small">В наличии: ${qty}</div></div></div><div class="controls"><button class="btn" data-open="${id}">Открыть</button></div>`
+        backpackEl.appendChild(el)
+      })
+
+      backpackEl.querySelectorAll('button[data-open]').forEach(b=>b.addEventListener('click',e=>{
+        const id = e.currentTarget.dataset.open
+        openModal(id)
+      }))
+    }
+
+    function buyItem(id){
+      const it = ITEMS.find(x=>x.id===id)
+      if(!it) return
+      if(state.coins < it.price){
+        alert('Недостаточно монет')
+        return
+      }
+      state.coins -= it.price
+      state.backpack[id] = (state.backpack[id]||0)+1
+      save(); renderAll()
+    }
+
+    // --- Модал ---
+    const modal = document.getElementById('modal')
+    const modalName = document.getElementById('modal-name')
+    const modalPrice = document.getElementById('modal-price')
+    const modalIcon = document.getElementById('modal-icon')
+    const qtyEl = document.getElementById('qty')
+    let current = null
+    let currentQty = 1
+
+    function openModal(id){
+      current = ITEMS.find(x=>x.id===id)
+      currentQty = 1
+      modalName.textContent = current.name
+      modalPrice.textContent = current.price
+      modalIcon.textContent = current.icon
+      qtyEl.textContent = currentQty
+      modal.style.display = 'flex'
+    }
+
+    document.getElementById('inc').addEventListener('click',()=>{
+      const max = state.backpack[current.id] || 0
+      if(currentQty < max) currentQty++
+      qtyEl.textContent = currentQty
+    })
+    document.getElementById('dec').addEventListener('click',()=>{
+      if(currentQty>1) currentQty--
+      qtyEl.textContent = currentQty
+    })
+
+    document.getElementById('sell').addEventListener('click',()=>{
+      const have = state.backpack[current.id]||0
+      if(currentQty>have){ alert('У тебя нет столько предметов'); return }
+      // продажа — даём игроку цену * количество
+      const income = current.price * currentQty
+      state.coins += income
+      state.backpack[current.id] = have - currentQty
+      if(state.backpack[current.id] === 0) delete state.backpack[current.id]
+      save(); renderAll(); closeModal();
+      alert(`Продано ${currentQty} × ${current.name} за ${income} монет`)
+    })
+
+    function closeModal(){ modal.style.display='none'; current=null }
+    modal.addEventListener('click',e=>{ if(e.target===modal) closeModal() })
+
+    function renderAll(){ coinsEl.textContent = state.coins; renderShop(); renderBackpack() }
+
+    // initial render
+    renderAll()
+
+    // keyboard: Esc to close modal
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal() })
+  </script></body>
+</html>
