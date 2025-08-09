@@ -7,7 +7,7 @@
 <style>
   body {
     margin: 0; padding: 0; font-family: Arial, sans-serif;
-    background: #f0f0f0;
+    background: #f0f8ff;
     display: flex; flex-direction: column; align-items: center;
   }
   #startScreen, #gameScreen {
@@ -29,6 +29,10 @@
     padding: 10px 20px;
     font-size: 18px;
     cursor: pointer;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
   }
 
   #header {
@@ -38,6 +42,7 @@
     width: 100%;
     box-sizing: border-box;
     text-align: center;
+    border-radius: 8px 8px 0 0;
   }
   #header h1 {
     margin: 0;
@@ -53,6 +58,10 @@
     text-align: center;
   }
 
+  h3 {
+    margin-bottom: 6px;
+  }
+
   #products, #storage {
     display: flex;
     flex-wrap: wrap;
@@ -62,17 +71,33 @@
   .product, .storage-item {
     background: white;
     border-radius: 8px;
-    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    box-shadow: 0 0 7px rgba(0,0,0,0.15);
     padding: 10px;
     width: 140px;
     box-sizing: border-box;
     text-align: center;
+    transition: transform 0.2s;
+  }
+  .product:hover, .storage-item:hover {
+    transform: scale(1.05);
   }
   .product button, .storage-item button {
     margin-top: 8px;
     padding: 5px 10px;
     font-size: 14px;
     cursor: pointer;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+  }
+  .product input[type=number], .storage-item input[type=number] {
+    width: 60px;
+    margin-top: 6px;
+    padding: 3px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
   }
 
   #storage {
@@ -87,6 +112,14 @@
     padding: 10px 15px;
     font-size: 16px;
     cursor: pointer;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    transition: background 0.3s;
+  }
+  #upgradeSection button:hover {
+    background: #357ABD;
   }
 
   #reviews {
@@ -97,6 +130,7 @@
     border-radius: 8px;
     padding: 10px;
     box-sizing: border-box;
+    box-shadow: 0 0 7px rgba(0,0,0,0.1);
   }
   #reviews .review {
     border-bottom: 1px solid #ddd;
@@ -108,6 +142,12 @@
   }
   .stars {
     color: #f5a623;
+  }
+
+  /* Смайлики к товарам */
+  .emoji {
+    font-size: 20px;
+    margin-right: 6px;
   }
 </style>
 </head>
@@ -145,16 +185,16 @@
 (() => {
   // --- Данные ---
   const productsData = [
-    {id: 'apple', name: 'Яблоко', price: 50},
-    {id: 'orange', name: 'Апельсин', price: 50},
-    {id: 'coconut', name: 'Кокос', price: 50},
-    {id: 'ramen', name: 'Рамен', price: 50},
-    {id: 'banana', name: 'Банан', price: 50},
-    {id: 'bread', name: 'Хлеб', price: 50},
-    {id: 'milk', name: 'Молоко', price: 50},
-    {id: 'cheese', name: 'Сыр', price: 50},
-    {id: 'fish', name: 'Рыба', price: 50},
-    {id: 'egg', name: 'Яйцо', price: 50},
+    {id: 'apple', name: 'Яблоко', price: 50, emoji: '🍎'},
+    {id: 'orange', name: 'Апельсин', price: 50, emoji: '🍊'},
+    {id: 'coconut', name: 'Кокос', price: 50, emoji: '🥥'},
+    {id: 'ramen', name: 'Рамен', price: 50, emoji: '🍜'},
+    {id: 'banana', name: 'Банан', price: 50, emoji: '🍌'},
+    {id: 'bread', name: 'Хлеб', price: 50, emoji: '🍞'},
+    {id: 'milk', name: 'Молоко', price: 50, emoji: '🥛'},
+    {id: 'cheese', name: 'Сыр', price: 50, emoji: '🧀'},
+    {id: 'fish', name: 'Рыба', price: 50, emoji: '🐟'},
+    {id: 'egg', name: 'Яйцо', price: 50, emoji: '🥚'},
   ];
 
   let balance = 50;
@@ -187,7 +227,7 @@
       const div = document.createElement('div');
       div.className = 'product';
       div.innerHTML = `
-        <strong>${p.name}</strong><br/>
+        <span class="emoji">${p.emoji}</span><strong>${p.name}</strong><br/>
         Цена покупки: <strong>5</strong> монет<br/>
         Цена продажи (установленная): <input type="number" min="10" max="50" value="${storage[p.id]?.price ?? 50}" data-id="${p.id}" style="width: 60px;" /> <br/>
         <button data-id="${p.id}">Купить</button>
@@ -205,12 +245,13 @@
     }
     keys.forEach(id => {
       const item = storage[id];
+      const product = productsData.find(p => p.id === id);
       const div = document.createElement('div');
       div.className = 'storage-item';
       div.innerHTML = `
-        <strong>${productsData.find(p => p.id === id).name}</strong><br/>
+        <span class="emoji">${product.emoji}</span><strong>${product.name}</strong><br/>
         Количество: ${item.count}<br/>
-        Цена продажи: ${item.price} монет<br/>
+        Цена продажи: <input type="number" min="10" max="50" value="${item.price}" data-id="${id}" class="storage-price-input" style="width: 60px;" /><br/>
         <button data-id="${id}">Продать</button>
       `;
       storageElem.appendChild(div);
@@ -289,6 +330,7 @@
     }
     renderBalance();
     renderStorage();
+    renderProducts(); // Чтобы синхронизировать цену в магазине и складе
   }
 
   // Продажа товара:  
@@ -344,18 +386,19 @@
     }
     renderBalance();
     renderStorage();
+    renderProducts(); // чтобы синхронизировать цены
     checkLose();
   }
 
-  // Обновление цены товара (через input)
+  // Обновление цены товара (через input в магазине и складе)
   function updatePrice(id, newPrice) {
     if(!storage[id]) {
-      // если товара нет на складе, создаём запись с count=0  
       storage[id] = {count:0, price: newPrice};
     } else {
       storage[id].price = newPrice;
     }
     renderStorage();
+    renderProducts();
   }
 
   // Улучшение склада
@@ -420,8 +463,20 @@
       updatePrice(id, val);
     }
   });
+
+  storageElem.addEventListener('change', e => {
+    if(e.target.tagName === 'INPUT' && e.target.classList.contains('storage-price-input')) {
+      const id = e.target.getAttribute('data-id');
+      let val = parseInt(e.target.value);
+      if(isNaN(val)) val = 50;
+      if(val < 10) val = 10;
+      if(val > 50) val = 50;
+      e.target.value = val;
+      updatePrice(id, val);
+    }
+  });
 })();
 </script>
 
 </body>
-  </html>
+</html>
