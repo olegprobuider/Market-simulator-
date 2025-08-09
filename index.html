@@ -1,257 +1,427 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Market Simulator — Покупай и Продавай</title>
-  <style>
-    body{margin:0;background:#071122;color:#fff;font-family:Arial, sans-serif;padding:20px}
-    .app{max-width:1000px;margin:auto}
-    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-    h1{margin:0}
-    .coins{background:#0b1220;padding:10px 14px;border-radius:12px}
-    .layout{display:grid;grid-template-columns:1fr 320px;gap:20px}
-    .card{background:#0b1220;border-radius:12px;padding:14px}
-    .shop-grid{display:flex;gap:12px;flex-wrap:wrap}
-    .item{width:calc(50% - 6px);background:rgba(255,255,255,0.05);padding:12px;border-radius:10px}
-    .item .row{display:flex;justify-content:space-between;align-items:center}
-    .btn{background:linear-gradient(90deg,#0ea5a0,#06b6d4);border:none;padding:8px 10px;border-radius:8px;color:#022;cursor:pointer}
-    .small{font-size:13px;color:#aaa}
-    .backpack-list{display:flex;flex-direction:column;gap:8px}
-    .bp-item{background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
-    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);}
-    .panel{background:#0b1220;padding:18px;border-radius:12px;width:320px}
-    .qty-controls, .price-controls{display:flex;justify-content:space-between;align-items:center;margin:12px 0}
-    .qty-controls button, .price-controls button{width:48px;height:48px;border-radius:10px;border:none;font-size:22px;background:rgba(255,255,255,0.05);color:inherit;cursor:pointer}
-    .sell-btn{background:#ef4444;color:white;padding:10px;border-radius:10px;border:none;width:100%;cursor:pointer}
-    .reviews{margin-top:20px;background:#0b1220;padding:14px;border-radius:12px}
-    .review{border-bottom:1px solid rgba(255,255,255,0.1);padding:8px 0}
-    .stars{color:gold}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Симулятор Магазина</title>
+<style>
+  body {
+    margin: 0; padding: 0; font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  #startScreen, #gameScreen {
+    width: 100%; max-width: 480px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  #startScreen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100vh;
+  }
+  #startScreen input {
+    padding: 10px;
+    font-size: 18px;
+    width: 80%;
+    margin-bottom: 10px;
+  }
+  #startScreen button {
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+
+  #header {
+    background: #4a90e2;
+    color: white;
+    padding: 10px 20px;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  #header h1 {
+    margin: 0;
+  }
+  #header .rating {
+    margin-top: 4px;
+    font-size: 16px;
+  }
+
+  #balance {
+    margin: 15px 0;
+    font-size: 20px;
+    text-align: center;
+  }
+
+  #products, #storage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .product, .storage-item {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    padding: 10px;
+    width: 140px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+  .product button, .storage-item button {
+    margin-top: 8px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  #storage {
+    margin-top: 20px;
+  }
+
+  #upgradeSection {
+    margin: 20px 0;
+    text-align: center;
+  }
+  #upgradeSection button {
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  #reviews {
+    margin-top: 20px;
+    max-height: 150px;
+    overflow-y: auto;
+    background: white;
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  #reviews .review {
+    border-bottom: 1px solid #ddd;
+    padding: 5px 0;
+    font-size: 14px;
+  }
+  #reviews .review:last-child {
+    border-bottom: none;
+  }
+  .stars {
+    color: #f5a623;
+  }
+</style>
 </head>
 <body>
-<div class="app">
-<header>
-  <h1>Market Simulator</h1>
-  <div class="coins">Монеты: <b id="coins">0</b></div>
-</header>
-<div class="layout">
-  <section class="card">
-    <h3>Магазин</h3>
-    <div class="shop-grid" id="shop"></div>
-  </section>
-  <aside class="card">
-    <h3>Рюкзак</h3>
-    <div class="backpack-list" id="backpack"></div>
-  </aside>
+
+<div id="startScreen">
+  <h2>Введите название вашего магазина</h2>
+  <input type="text" id="shopNameInput" placeholder="Название магазина" maxlength="20" />
+  <button id="startBtn">Начать</button>
 </div>
-<div class="reviews">
+
+<div id="gameScreen" style="display:none;">
+  <div id="header">
+    <h1 id="shopName">Магазин</h1>
+    <div class="rating">Рейтинг: <span id="ratingValue">—</span></div>
+  </div>
+
+  <div id="balance">Баланс: <span id="balanceValue">50</span> монет</div>
+
+  <h3>Товары для покупки</h3>
+  <div id="products"></div>
+
+  <h3>Склад (вместимость <span id="storageCapacity">10</span>)</h3>
+  <div id="storage"></div>
+
+  <div id="upgradeSection">
+    <button id="upgradeStorageBtn">Улучшить склад (цена: <span id="upgradePrice">100</span> монет)</button>
+  </div>
+
   <h3>Отзывы покупателей</h3>
   <div id="reviews"></div>
 </div>
-</div>
-
-<div id="modal" style="display:none" class="modal">
-  <div class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div id="modal-name" style="font-weight:700;font-size:16px">Предмет</div>
-        <div class="small">Цена продажи: <span id="modal-price">0</span> монет</div>
-      </div>
-      <div id="modal-icon" style="font-size:28px">🍎</div>
-    </div>
-    <div class="price-controls" style="margin-top:10px;">
-      <button id="dec-price">-</button>
-      <div style="text-align:center;flex:1"><div class="small">Изменить цену</div><div id="price-val" style="font-size:22px">0</div></div>
-      <button id="inc-price">+</button>
-    </div>
-    <button class="sell-btn" id="sell">Продать</button>
-  </div>
-</div>
 
 <script>
-const ITEMS = [
-  {id:'apple',name:'Яблоко',icon:'🍎',price:5,sell:3},
-  {id:'smile',name:'Смайлик',icon:'😊',price:12,sell:8},
-  {id:'banana',name:'Банан',icon:'🍌',price:8,sell:5},
-  {id:'star',name:'Звёздочка',icon:'⭐',price:20,sell:15},
-  {id:'orange',name:'Апельсин',icon:'🍊',price:7,sell:5},
-  {id:'coconut',name:'Кокос',icon:'🥥',price:15,sell:10},
-  {id:'ramen',name:'Рамен',icon:'🍜',price:25,sell:18},
-  {id:'grape',name:'Виноград',icon:'🍇',price:9,sell:6},
-  {id:'carrot',name:'Морковь',icon:'🥕',price:4,sell:3},
-  {id:'fish',name:'Рыба',icon:'🐟',price:18,sell:12}
-];
-const REVIEWS = [
-  {stars:1,text:'Слишком дорого!'},
-  {stars:2,text:'Не очень...'},
-  {stars:3,text:'Нормально'},
-  {stars:4,text:'Хорошо'},
-  {stars:5,text:'Отлично!'},
-  {stars:5,text:'Петя доволен!'}
-];
+(() => {
+  // --- Данные ---
+  const productsData = [
+    {id: 'apple', name: 'Яблоко', price: 50},
+    {id: 'orange', name: 'Апельсин', price: 50},
+    {id: 'coconut', name: 'Кокос', price: 50},
+    {id: 'ramen', name: 'Рамен', price: 50},
+    {id: 'banana', name: 'Банан', price: 50},
+    {id: 'bread', name: 'Хлеб', price: 50},
+    {id: 'milk', name: 'Молоко', price: 50},
+    {id: 'cheese', name: 'Сыр', price: 50},
+    {id: 'fish', name: 'Рыба', price: 50},
+    {id: 'egg', name: 'Яйцо', price: 50},
+  ];
 
-const state = {
-  coins: Number(localStorage.getItem('coins')||50),
-  backpack: JSON.parse(localStorage.getItem('backpack')||'{}'),
-  prices: JSON.parse(localStorage.getItem('prices')||'{}')
-};
+  let balance = 50;
+  let storageCapacity = 10;
+  let upgradePrice = 100;
+  let storage = {}; // id -> {count, price}
+  let reviews = []; // последние 10 отзывов
 
-const shopEl=document.getElementById('shop'),
-      backpackEl=document.getElementById('backpack'),
-      coinsEl=document.getElementById('coins'),
-      reviewsEl=document.getElementById('reviews'),
-      modal=document.getElementById('modal'),
-      modalName=document.getElementById('modal-name'),
-      modalPrice=document.getElementById('modal-price'),
-      modalIcon=document.getElementById('modal-icon'),
-      priceVal=document.getElementById('price-val'),
-      decPriceBtn=document.getElementById('dec-price'),
-      incPriceBtn=document.getElementById('inc-price'),
-      sellBtn=document.getElementById('sell');
+  let shopName = 'Магазин';
 
-let current=null;
-let currentPrice=0;
+  // --- Элементы ---
+  const startScreen = document.getElementById('startScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const shopNameElem = document.getElementById('shopName');
+  const ratingValueElem = document.getElementById('ratingValue');
+  const balanceValueElem = document.getElementById('balanceValue');
+  const productsElem = document.getElementById('products');
+  const storageElem = document.getElementById('storage');
+  const storageCapacityElem = document.getElementById('storageCapacity');
+  const upgradePriceElem = document.getElementById('upgradePrice');
+  const upgradeStorageBtn = document.getElementById('upgradeStorageBtn');
+  const reviewsElem = document.getElementById('reviews');
+  const shopNameInput = document.getElementById('shopNameInput');
+  const startBtn = document.getElementById('startBtn');
 
-function save(){
-  localStorage.setItem('coins',state.coins);
-  localStorage.setItem('backpack',JSON.stringify(state.backpack));
-  localStorage.setItem('prices',JSON.stringify(state.prices));
-}
+  // --- Функции ---
+  function renderProducts() {
+    productsElem.innerHTML = '';
+    productsData.forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        <strong>${p.name}</strong><br/>
+        Цена покупки: <strong>5</strong> монет<br/>
+        Цена продажи (установленная): <input type="number" min="10" max="50" value="${storage[p.id]?.price ?? 50}" data-id="${p.id}" style="width: 60px;" /> <br/>
+        <button data-id="${p.id}">Купить</button>
+      `;
+      productsElem.appendChild(div);
+    });
+  }
 
-function renderShop(){
-  shopEl.innerHTML='';
-  ITEMS.forEach(it=>{
-    const div=document.createElement('div');
-    div.className='item';
-    div.innerHTML=`
-      <div class="row">
-        <div>
-          <div style="font-size:22px">${it.icon} ${it.name}</div>
-          <div class="small">Цена покупки: ${it.price}</div>
-        </div>
-        <div><button class="btn" data-id="${it.id}">Купить</button></div>
-      </div>
-    `;
-    shopEl.appendChild(div);
+  function renderStorage() {
+    storageElem.innerHTML = '';
+    const keys = Object.keys(storage);
+    if(keys.length === 0) {
+      storageElem.innerHTML = '<i>Склад пуст</i>';
+      return;
+    }
+    keys.forEach(id => {
+      const item = storage[id];
+      const div = document.createElement('div');
+      div.className = 'storage-item';
+      div.innerHTML = `
+        <strong>${productsData.find(p => p.id === id).name}</strong><br/>
+        Количество: ${item.count}<br/>
+        Цена продажи: ${item.price} монет<br/>
+        <button data-id="${id}">Продать</button>
+      `;
+      storageElem.appendChild(div);
+    });
+  }
+
+  function renderBalance() {
+    balanceValueElem.textContent = balance;
+  }
+
+  function renderStorageCapacity() {
+    storageCapacityElem.textContent = storageCapacity;
+  }
+
+  function renderUpgradePrice() {
+    upgradePriceElem.textContent = upgradePrice;
+  }
+
+  function renderReviews() {
+    reviewsElem.innerHTML = '';
+    if(reviews.length === 0) {
+      reviewsElem.innerHTML = '<i>Отзывов пока нет</i>';
+      return;
+    }
+    reviews.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'review';
+      div.innerHTML = `<span class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span> — ${r.text}`;
+      reviewsElem.appendChild(div);
+    });
+  }
+
+  // Подсчет рейтинга (среднее по последним 10 отзывам)
+  function calculateRating() {
+    if(reviews.length === 0) return '—';
+    const sum = reviews.reduce((a,b) => a + b.stars, 0);
+    return (sum / reviews.length).toFixed(1);
+  }
+
+  // Добавить отзыв, с ограничением до 10 последних
+  function addReview(stars, text) {
+    reviews.push({stars, text});
+    if(reviews.length > 10) reviews.shift();
+    renderReviews();
+    ratingValueElem.textContent = calculateRating();
+  }
+
+  // Подсчитать общий занятый склад
+  function storageCount() {
+    return Object.values(storage).reduce((a,b) => a + b.count, 0);
+  }
+
+  // Проверка проигрыша: если монет 0 и склад пуст
+  function checkLose() {
+    if(balance <= 0 && storageCount() === 0) {
+      alert('Вы проиграли! Игра будет перезапущена.');
+      location.reload();
+    }
+  }
+
+  // Обработка покупки товара (фиксировано 5 монет за покупку)
+  function buyProduct(id) {
+    if(balance < 5) {
+      alert('Недостаточно монет для покупки (нужно 5).');
+      return;
+    }
+    if(storageCount() >= storageCapacity) {
+      alert('Склад переполнен, сделайте апгрейд или продайте товары.');
+      return;
+    }
+    balance -= 5;
+    if(storage[id]) {
+      storage[id].count++;
+    } else {
+      storage[id] = {count:1, price: 50};
+    }
+    renderBalance();
+    renderStorage();
+  }
+
+  // Продажа товара:  
+  // Цена продажи зависит от установленной цены на товар в складе  
+  // Чем ближе цена к 10, тем лучше отзыв и выше шанс продажи  
+  function sellProduct(id) {
+    if(!storage[id] || storage[id].count === 0) {
+      alert('Товар отсутствует на складе.');
+      return;
+    }
+
+    const price = storage[id].price;
+    if(price < 10) storage[id].price = 10;
+    if(price > 50) storage[id].price = 50;
+
+    // Спрос зависит от цены:  
+    // вероятность продажи = 1 - (цена-10)/40 (от 1 при цене 10 до 0 при цене 50)  
+    const saleChance = 1 - (price - 10) / 40;
+    if(Math.random() > saleChance) {
+      // покупатель не купил — плохой отзыв  
+      addReview(1, `Слишком дорогой ${productsData.find(p => p.id === id).name}.`);
+      alert('Покупатель посчитал цену слишком высокой и не купил товар.');
+      return;
+    }
+
+    // Успешная продажа
+    storage[id].count--;
+    balance += price;
+
+    // Отзыв в зависимости от цены:  
+    // цена ближе к 10 — 5 звёзд, ближе к 50 — 1 звезда (линейно)  
+    const stars = Math.round(5 - ((price - 10) / 40) * 4);
+    const positiveComments = [
+      'Отличный товар!',
+      'Очень доволен покупкой!',
+      'Хорошее качество.',
+      'Цена адекватная, покупаю ещё.',
+      'Буду рекомендовать друзьям.'
+    ];
+    const negativeComments = [
+      'Слишком дорого.',
+      'Не стоит своих денег.',
+      'Покупать не рекомендую.',
+      'Цена завышена.',
+      'Ждал скидок, но нет.'
+    ];
+
+    const text = stars >= 4 ? positiveComments[Math.floor(Math.random()*positiveComments.length)] : negativeComments[Math.floor(Math.random()*negativeComments.length)];
+    addReview(stars, text);
+
+    if(storage[id].count === 0) {
+      delete storage[id];
+    }
+    renderBalance();
+    renderStorage();
+    checkLose();
+  }
+
+  // Обновление цены товара (через input)
+  function updatePrice(id, newPrice) {
+    if(!storage[id]) {
+      // если товара нет на складе, создаём запись с count=0  
+      storage[id] = {count:0, price: newPrice};
+    } else {
+      storage[id].price = newPrice;
+    }
+    renderStorage();
+  }
+
+  // Улучшение склада
+  function upgradeStorage() {
+    if(balance < upgradePrice) {
+      alert(`Недостаточно монет. Нужно ${upgradePrice}.`);
+      return;
+    }
+    balance -= upgradePrice;
+    storageCapacity += 10;
+    upgradePrice += 100;
+
+    renderBalance();
+    renderStorageCapacity();
+    renderUpgradePrice();
+  }
+
+  // --- Обработчики ---
+  startBtn.onclick = () => {
+    const name = shopNameInput.value.trim();
+    if(name.length === 0) {
+      alert('Введите название магазина');
+      return;
+    }
+    shopName = name;
+    shopNameElem.textContent = shopName;
+    startScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+    renderProducts();
+    renderStorage();
+    renderBalance();
+    renderStorageCapacity();
+    renderUpgradePrice();
+    renderReviews();
+    ratingValueElem.textContent = '—';
+  };
+
+  upgradeStorageBtn.onclick = upgradeStorage;
+
+  productsElem.addEventListener('click', e => {
+    if(e.target.tagName === 'BUTTON') {
+      const id = e.target.getAttribute('data-id');
+      buyProduct(id);
+    }
   });
-  shopEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',e=>buyItem(e.currentTarget.dataset.id)));
-}
 
-function renderBackpack(){
-  backpackEl.innerHTML='';
-  const keys=Object.keys(state.backpack);
-  if(keys.length===0){
-    backpackEl.innerHTML='<div class="small">Рюкзак пуст</div>';
-    return;
-  }
-  keys.forEach(id=>{
-    const qty=state.backpack[id];
-    const it=ITEMS.find(x=>x.id===id);
-    const price = state.prices[id] !== undefined ? state.prices[id] : it.sell;
-    const el=document.createElement('div');
-    el.className='bp-item';
-    el.innerHTML=`
-      <div>${it.icon} ${it.name} × ${qty} <br><small>Цена продажи: ${price} монет</small></div>
-      <button class="btn" data-open="${id}">Открыть</button>
-    `;
-    backpackEl.appendChild(el);
+  storageElem.addEventListener('click', e => {
+    if(e.target.tagName === 'BUTTON') {
+      const id = e.target.getAttribute('data-id');
+      sellProduct(id);
+    }
   });
-  backpackEl.querySelectorAll('button[data-open]').forEach(b=>b.addEventListener('click',e=>openModal(e.currentTarget.dataset.open)));
-}
 
-function buyItem(id){
-  const it=ITEMS.find(x=>x.id===id);
-  if(!it)return;
-
-  if(state.coins < it.price){
-    alert('Недостаточно монет');
-    checkGameOver();
-    return;
-  }
-
-  state.coins -= it.price;
-  state.backpack[id] = (state.backpack[id]||0) + 1;
-  save();
-  renderAll();
-}
-
-function checkGameOver(){
-  const backpackEmpty = Object.keys(state.backpack).length === 0;
-  const minPrice = Math.min(...ITEMS.map(i => i.price));
-  if(backpackEmpty && state.coins < minPrice){
-    alert('Вы проиграли! Монет и предметов нет. Сайт перезагрузится.');
-    location.reload();
-  }
-}
-
-function openModal(id){
-  current = ITEMS.find(x=>x.id===id);
-  currentPrice = state.prices[id] !== undefined ? state.prices[id] : current.sell;
-  modalName.textContent = current.name;
-  modalPrice.textContent = currentPrice;
-  priceVal.textContent = currentPrice;
-  modalIcon.textContent = current.icon;
-  modal.style.display = 'flex';
-}
-
-function closeModal(){
-  modal.style.display = 'none';
-  current = null;
-}
-
-decPriceBtn.addEventListener('click', () => {
-  if(currentPrice > 1) currentPrice--;
-  modalPrice.textContent = currentPrice;
-  priceVal.textContent = currentPrice;
-});
-
-incPriceBtn.addEventListener('click', () => {
-  currentPrice++;
-  modalPrice.textContent = currentPrice;
-  priceVal.textContent = currentPrice;
-});
-
-sellBtn.addEventListener('click', () => {
-  if(!current) return;
-  const have = state.backpack[current.id] || 0;
-  if(have < 1){
-    alert('Нет предметов для продажи');
-    return;
-  }
-  state.coins += currentPrice;
-  state.backpack[current.id] = have - 1;
-  if(state.backpack[current.id] === 0) delete state.backpack[current.id];
-  state.prices[current.id] = currentPrice;
-  save();
-  renderAll();
-  closeModal();
-  addReview();
-});
-
-modal.addEventListener('click', e => {
-  if(e.target === modal) closeModal();
-});
-
-function addReview(){
-  const r = REVIEWS[Math.floor(Math.random() * REVIEWS.length)];
-  const div = document.createElement('div');
-  div.className = 'review';
-  div.innerHTML = `<div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</div><div>${r.text}</div>`;
-  reviewsEl.prepend(div);
-}
-
-function renderAll(){
-  coinsEl.textContent = state.coins;
-  renderShop();
-  renderBackpack();
-}
-
-renderAll();
-
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') closeModal();
-});
+  productsElem.addEventListener('change', e => {
+    if(e.target.tagName === 'INPUT' && e.target.hasAttribute('data-id')) {
+      const id = e.target.getAttribute('data-id');
+      let val = parseInt(e.target.value);
+      if(isNaN(val)) val = 50;
+      if(val < 10) val = 10;
+      if(val > 50) val = 50;
+      e.target.value = val;
+      updatePrice(id, val);
+    }
+  });
+})();
 </script>
+
 </body>
-</html>
+  </html>
