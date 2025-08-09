@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
@@ -22,8 +21,8 @@
     .bp-item{background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
     .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);}
     .panel{background:#0b1220;padding:18px;border-radius:12px;width:320px}
-    .qty-controls{display:flex;justify-content:space-between;align-items:center;margin:12px 0}
-    .qty-controls button{width:48px;height:48px;border-radius:10px;border:none;font-size:22px;background:rgba(255,255,255,0.05);color:inherit}
+    .qty-controls, .price-controls{display:flex;justify-content:space-between;align-items:center;margin:12px 0}
+    .qty-controls button, .price-controls button{width:48px;height:48px;border-radius:10px;border:none;font-size:22px;background:rgba(255,255,255,0.05);color:inherit;cursor:pointer}
     .sell-btn{background:#ef4444;color:white;padding:10px;border-radius:10px;border:none;width:100%;cursor:pointer}
     .reviews{margin-top:20px;background:#0b1220;padding:14px;border-radius:12px}
     .review{border-bottom:1px solid rgba(255,255,255,0.1);padding:8px 0}
@@ -35,6 +34,227 @@
 <header>
   <h1>Market Simulator</h1>
   <div class="coins">Монеты: <b id="coins">0</b></div>
+</header>
+<div class="layout">
+  <section class="card">
+    <h3>Магазин</h3>
+    <div class="shop-grid" id="shop"></div>
+  </section>
+  <aside class="card">
+    <h3>Рюкзак</h3>
+    <div class="backpack-list" id="backpack"></div>
+  </aside>
+</div>
+<div class="reviews">
+  <h3>Отзывы покупателей</h3>
+  <div id="reviews"></div>
+</div>
+</div>
+
+<div id="modal" style="display:none" class="modal">
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div id="modal-name" style="font-weight:700;font-size:16px">Предмет</div>
+        <div class="small">Цена продажи: <span id="modal-price">0</span> монет</div>
+      </div>
+      <div id="modal-icon" style="font-size:28px">🍎</div>
+    </div>
+    <div class="price-controls" style="margin-top:10px;">
+      <button id="dec-price">-</button>
+      <div style="text-align:center;flex:1"><div class="small">Изменить цену</div><div id="price-val" style="font-size:22px">0</div></div>
+      <button id="inc-price">+</button>
+    </div>
+    <button class="sell-btn" id="sell">Продать</button>
+  </div>
+</div>
+
+<script>
+const ITEMS = [
+  {id:'apple',name:'Яблоко',icon:'🍎',price:5,sell:3},
+  {id:'smile',name:'Смайлик',icon:'😊',price:12,sell:8},
+  {id:'banana',name:'Банан',icon:'🍌',price:8,sell:5},
+  {id:'star',name:'Звёздочка',icon:'⭐',price:20,sell:15},
+  {id:'orange',name:'Апельсин',icon:'🍊',price:7,sell:5},
+  {id:'coconut',name:'Кокос',icon:'🥥',price:15,sell:10},
+  {id:'ramen',name:'Рамен',icon:'🍜',price:25,sell:18},
+  {id:'grape',name:'Виноград',icon:'🍇',price:9,sell:6},
+  {id:'carrot',name:'Морковь',icon:'🥕',price:4,sell:3},
+  {id:'fish',name:'Рыба',icon:'🐟',price:18,sell:12}
+];
+const REVIEWS = [
+  {stars:1,text:'Слишком дорого!'},
+  {stars:2,text:'Не очень...'},
+  {stars:3,text:'Нормально'},
+  {stars:4,text:'Хорошо'},
+  {stars:5,text:'Отлично!'},
+  {stars:5,text:'Петя доволен!'}
+];
+
+const state = {
+  coins: Number(localStorage.getItem('coins')||50),
+  backpack: JSON.parse(localStorage.getItem('backpack')||'{}'),
+  prices: JSON.parse(localStorage.getItem('prices')||'{}')
+};
+
+const shopEl=document.getElementById('shop'),
+      backpackEl=document.getElementById('backpack'),
+      coinsEl=document.getElementById('coins'),
+      reviewsEl=document.getElementById('reviews'),
+      modal=document.getElementById('modal'),
+      modalName=document.getElementById('modal-name'),
+      modalPrice=document.getElementById('modal-price'),
+      modalIcon=document.getElementById('modal-icon'),
+      priceVal=document.getElementById('price-val'),
+      decPriceBtn=document.getElementById('dec-price'),
+      incPriceBtn=document.getElementById('inc-price'),
+      sellBtn=document.getElementById('sell');
+
+let current=null;
+let currentPrice=0;
+
+function save(){
+  localStorage.setItem('coins',state.coins);
+  localStorage.setItem('backpack',JSON.stringify(state.backpack));
+  localStorage.setItem('prices',JSON.stringify(state.prices));
+}
+
+function renderShop(){
+  shopEl.innerHTML='';
+  ITEMS.forEach(it=>{
+    const div=document.createElement('div');
+    div.className='item';
+    div.innerHTML=`
+      <div class="row">
+        <div>
+          <div style="font-size:22px">${it.icon} ${it.name}</div>
+          <div class="small">Цена покупки: ${it.price}</div>
+        </div>
+        <div><button class="btn" data-id="${it.id}">Купить</button></div>
+      </div>
+    `;
+    shopEl.appendChild(div);
+  });
+  shopEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',e=>buyItem(e.currentTarget.dataset.id)));
+}
+
+function renderBackpack(){
+  backpackEl.innerHTML='';
+  const keys=Object.keys(state.backpack);
+  if(keys.length===0){
+    backpackEl.innerHTML='<div class="small">Рюкзак пуст</div>';
+    return;
+  }
+  keys.forEach(id=>{
+    const qty=state.backpack[id];
+    const it=ITEMS.find(x=>x.id===id);
+    const price = state.prices[id] !== undefined ? state.prices[id] : it.sell;
+    const el=document.createElement('div');
+    el.className='bp-item';
+    el.innerHTML=`
+      <div>${it.icon} ${it.name} × ${qty} <br><small>Цена продажи: ${price} монет</small></div>
+      <button class="btn" data-open="${id}">Открыть</button>
+    `;
+    backpackEl.appendChild(el);
+  });
+  backpackEl.querySelectorAll('button[data-open]').forEach(b=>b.addEventListener('click',e=>openModal(e.currentTarget.dataset.open)));
+}
+
+function buyItem(id){
+  const it=ITEMS.find(x=>x.id===id);
+  if(!it)return;
+
+  if(state.coins < it.price){
+    alert('Недостаточно монет');
+    checkGameOver();
+    return;
+  }
+
+  state.coins -= it.price;
+  state.backpack[id] = (state.backpack[id]||0) + 1;
+  save();
+  renderAll();
+}
+
+function checkGameOver(){
+  const backpackEmpty = Object.keys(state.backpack).length === 0;
+  const minPrice = Math.min(...ITEMS.map(i => i.price));
+  if(backpackEmpty && state.coins < minPrice){
+    alert('Вы проиграли! Монет и предметов нет. Сайт перезагрузится.');
+    location.reload();
+  }
+}
+
+function openModal(id){
+  current = ITEMS.find(x=>x.id===id);
+  currentPrice = state.prices[id] !== undefined ? state.prices[id] : current.sell;
+  modalName.textContent = current.name;
+  modalPrice.textContent = currentPrice;
+  priceVal.textContent = currentPrice;
+  modalIcon.textContent = current.icon;
+  modal.style.display = 'flex';
+}
+
+function closeModal(){
+  modal.style.display = 'none';
+  current = null;
+}
+
+decPriceBtn.addEventListener('click', () => {
+  if(currentPrice > 1) currentPrice--;
+  modalPrice.textContent = currentPrice;
+  priceVal.textContent = currentPrice;
+});
+
+incPriceBtn.addEventListener('click', () => {
+  currentPrice++;
+  modalPrice.textContent = currentPrice;
+  priceVal.textContent = currentPrice;
+});
+
+sellBtn.addEventListener('click', () => {
+  if(!current) return;
+  const have = state.backpack[current.id] || 0;
+  if(have < 1){
+    alert('Нет предметов для продажи');
+    return;
+  }
+  state.coins += currentPrice;
+  state.backpack[current.id] = have - 1;
+  if(state.backpack[current.id] === 0) delete state.backpack[current.id];
+  state.prices[current.id] = currentPrice;
+  save();
+  renderAll();
+  closeModal();
+  addReview();
+});
+
+modal.addEventListener('click', e => {
+  if(e.target === modal) closeModal();
+});
+
+function addReview(){
+  const r = REVIEWS[Math.floor(Math.random() * REVIEWS.length)];
+  const div = document.createElement('div');
+  div.className = 'review';
+  div.innerHTML = `<div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</div><div>${r.text}</div>`;
+  reviewsEl.prepend(div);
+}
+
+function renderAll(){
+  coinsEl.textContent = state.coins;
+  renderShop();
+  renderBackpack();
+}
+
+renderAll();
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>  <div class="coins">Монеты: <b id="coins">0</b></div>
 </header>
 <div class="layout">
   <section class="card">
